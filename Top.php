@@ -21,7 +21,7 @@ if(isset($_GET['gest'])){
     echo '<div  align="left" >';
     foreach($sql as $row){
         
-        echo '<a href="******.php?title=',$row['title'],'">',$row['title'],'</a>　　';
+        echo '<a href="thread.php?thread_id=',$row['thread_id'],'">',$row['title'],'</a>';
         $tr++;
         if($tr==3){
         echo '</div>';
@@ -89,7 +89,7 @@ $check=$row['freeze'];
 if($check == 1){
 ?>
 <table align="center">
-  <tr><td><div align="center">チャイニーズドラゴン　　　　　
+  <tr><td><div align="center">チャイニーズドラゴン
   <a href="login_input.php">ログアウト</a></div></td></tr>
   
   <tr><td><div align="center">
@@ -108,7 +108,7 @@ $sql = $pdo->query('select * from thread');
     echo '<div align="left">';
     foreach($sql as $row){
         
-        echo '<a href="******.php?title=',$row['title'],'">',$row['title'],'</a>　　';
+        echo '<a href="thread.php?thread_id=',$row['thread_id'],'">',$row['title'],'</a>';
         $tr++;
         if($tr==3){
         echo '</div>';
@@ -123,11 +123,11 @@ $sql = $pdo->query('select * from thread');
     echo '</div>';
     echo '</td>';
     echo '</tr>';
-    echo '<tr><td><div align="center"><button><a href="*">新規スレッド書き込み画面へ</a></button>';
+    echo '<tr><td><div align="center"><button><a href="thread-write.php">新規スレッド書き込み画面へ</a></button>';
     echo '<button><a href="*">ジャンル一覧へ</a></button>';
     echo '<button><a href="Popularity.php">人気スレッドへ</a></button></div></td></tr>';
     
-    echo '<tr><td><div align="center"><button><a href="chat.php">個人チャット</a></button>';
+    echo '<tr><td><div align="center"><button><a href="*">個人チャット</a></button>';
     echo '<button><a href="mypage.php">マイページ</a></button>';
     echo '<button><a href="*">お問い合わせ</a></button>';
     echo '<button><a href="*">使い方・注意</a></button></div></td></tr>';
