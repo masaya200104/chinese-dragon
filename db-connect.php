@@ -5,3 +5,5 @@
     const PASS='chinese';
     $connect = 'mysql:host='.SERVER.';dbname='.DBNAME.';charset=utf8';
 ?>
+
+
