@@ -21,7 +21,7 @@ if(isset($_GET['gest'])){
     echo '<div  align="left" >';
     foreach($sql as $row){
         
-        echo '<a href="******.php?title=',$row['title'],'">',$row['title'],'</a>　　';
+        echo '<a href="thread.php?thread_id=',$row['thread_id'],'">',$row['title'],'</a>';
         $tr++;
         if($tr==3){
         echo '</div>';
@@ -108,7 +108,7 @@ $sql = $pdo->query('select * from thread');
     echo '<div align="left">';
     foreach($sql as $row){
         
-        echo '<a href="******.php?title=',$row['title'],'">',$row['title'],'</a>　　';
+        echo '<a href="thread.php?thread_id=',$row['thread_id'],'">',$row['title'],'</a>';
         $tr++;
         if($tr==3){
         echo '</div>';

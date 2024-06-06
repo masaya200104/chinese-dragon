@@ -27,7 +27,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['client_id']) && isset
     $client_id = $_POST['client_id']; // ポップアップから送信されたクライアントのIDを取得
     $user_id = $_SESSION['customer']['id'] ?? null; // ログインしているユーザーのIDを取得
     $action_type = $_POST['action_type']; // アクションのタイプを取得
-
     if ($user_id != null) {
         if ($action_type === 'add_friend') {
             // 友達追加の処理
@@ -44,6 +43,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['client_id']) && isset
                     if ($stmt->fetch()) {
                         $stmt = $pdo->prepare('INSERT INTO friend (friend_id, client_id, opponent_id) VALUES (null, ?, ?)');
                         $stmt->execute([$user_id, $client_id]);
+                        $stm = $pdo->prepare('INSERT INTO friend (friend_id, client_id, opponent_id) VALUES (null, ?, ?)');
+                        $stm->execute([$client_id, $user_id]);
                         echo '<script>alert("友達を追加しました！");</script>';
                     } else {
                         echo '<script>alert("相手のIDが存在しません。");</script>';
@@ -53,10 +54,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['client_id']) && isset
                 }
             }
         } elseif ($action_type === 'report') {
-            // 通報の処理
-            // 通報処理のロジックをここに追加
-            echo '<script>alert("通報しました。");</script>';
-        }
+ // 通報の処理
+$report_reason = $_POST['report_reason'] ?? '';
+if (!empty($report_reason)) {
+    // 選択した投稿のpost_idを取得
+
+        $reporter_id = $_SESSION['customer']['id'] ?? null; 
+        $suspect_id = $_POST['client_id']; // ポップアップから送信されたクライアントのIDを取得
+        $post_id = $_POST['post_id']; // 選択した投稿のpost_idを取得
+        $stmt = $pdo->prepare('INSERT INTO report(report_reason, date, reporter_id, post_id, suspect_id) VALUES (?, NOW(), ?, ?, ?)');
+        $stmt->execute([$report_reason, $reporter_id, $post_id, $suspect_id]);
+         echo '<script>alert("通報しました。");</script>';
+        } else {
+        echo '<script>alert("通報理由を入力してください。");</script>';
+    } 
+}
     } else {
         echo '<script>alert("ログインしていません。");</script>';
     }
@@ -90,6 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post'])) {
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -109,8 +122,8 @@ try {
     while ($post = $stmt->fetch(PDO::FETCH_ASSOC)) {
         ?>
         <div>
-            名前: <a href="#" class="popupLink" data-client-id="<?php echo htmlspecialchars($post['client_id'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($post['name'], ENT_QUOTES, 'UTF-8'); ?></a>
-            通報する: <a href="#" class="reportLink" data-client-id="<?php echo htmlspecialchars($post['client_id'], ENT_QUOTES, 'UTF-8'); ?>">通報する</a>
+            名前: <a href="#" class="popupLink" data-client-id="<?php echo htmlspecialchars($post['client_id'], ENT_QUOTES, 'UTF-8'); ?>" data-post-id="<?php echo htmlspecialchars($post['post_id'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($post['name'], ENT_QUOTES, 'UTF-8'); ?></a>
+            <a href="#" class="reportLink" data-client-id="<?php echo htmlspecialchars($post['client_id'], ENT_QUOTES, 'UTF-8'); ?>" data-post-id="<?php echo htmlspecialchars($post['post_id'], ENT_QUOTES, 'UTF-8'); ?>">通報する</a><br>
             投稿: <?php echo nl2br(htmlspecialchars($post['post'], ENT_QUOTES, 'UTF-8')); ?><br>
             投稿日時: <?php echo htmlspecialchars($post['date'], ENT_QUOTES, 'UTF-8'); ?><br>
         </div>
@@ -122,8 +135,8 @@ try {
         <textarea name="post" cols="50" rows="10" placeholder="ここに投稿を入力してください"></textarea><br>
         <button type="submit">投稿する</button>
     </form>
-    <a href="Top.php">戻る</a>
-<?php
+    <?php
+    echo '<tr><td><div align="center"><button><a href="Top_kensakukekka.php">戻る</a></button></div></td></tr>';
 } catch (PDOException $e) {
     echo 'エラー: ' . $e->getMessage();
 }
@@ -132,23 +145,41 @@ try {
 <div class="overlay" id="overlay"></div>
 <div class="popup" id="popup">
     <p id="popupMessage"></p>
-    <button id="popupActionButton" onclick="performAction()">実行する</button>
+    <div id="reasonInput" style="display: none;">
+        <textarea id="reportReason" placeholder="通報理由を入力してください"></textarea>
+    </div>
+    <button id="popupActionButton" onclick="showConfirmation()">次へ</button>
     <button onclick="closePopup()">キャンセル</button>
     <!-- ポップアップフォーム -->
     <form id="popupForm" action="" method="POST">
         <input type="hidden" name="client_id" id="clientIdField">
         <input type="hidden" name="action_type" id="actionTypeField">
+        <input type="hidden" name="report_reason" id="reportReasonField">
+        <input type="hidden" name="post_id" id="postIdField">
     </form>
+</div>
+
+<div class="popup" id="confirmationPopup" style="display: none;">
+    <p id="confirmationMessage"></p>
+    <button id="confirmActionButton" onclick="performAction()">実行する</button>
+    <button onclick="closeConfirmationPopup()">キャンセル</button>
 </div>
 
 <script>
     // ポップアップを開く
-    function openPopup(clientId, message, actionType) {
+    function openPopup(clientId, postId, message, actionType) {
         document.getElementById("overlay").style.display = "block";
         document.getElementById("popup").style.display = "block";
         document.getElementById("popup").setAttribute('data-client-id', clientId);
+        document.getElementById("popup").setAttribute('data-post-id', postId); // 追加
         document.getElementById("popupMessage").innerText = message;
         document.getElementById("actionTypeField").value = actionType;
+
+        if (actionType === 'report') {
+            document.getElementById("reasonInput").style.display = "block";
+        } else {
+            document.getElementById("reasonInput").style.display = "none";
+        }
     }
 
     // ポップアップを閉じる
@@ -157,10 +188,34 @@ try {
         document.getElementById("popup").style.display = "none";
     }
 
+    // 確認ポップアップを開く
+    function showConfirmation() {
+        if (document.getElementById("actionTypeField").value === 'report') {
+            var reason = document.getElementById("reportReason").value;
+            if (!reason) {
+                alert("通報理由を入力してください");
+                return;
+            }
+            document.getElementById("reportReasonField").value = reason;
+        }
+
+        document.getElementById("popup").style.display = "none";
+        document.getElementById("confirmationPopup").style.display = "block";
+        document.getElementById("confirmationMessage").innerText = "この操作を実行しますか？";
+    }
+
+    // 確認ポップアップを閉じる
+    function closeConfirmationPopup() {
+        document.getElementById("confirmationPopup").style.display = "none";
+        document.getElementById("overlay").style.display = "none";
+    }
+
     // ポップアップアクションを実行する
     function performAction() {
         var clientId = document.getElementById("popup").getAttribute('data-client-id');
+        var postId = document.getElementById("popup").getAttribute('data-post-id'); // 追加
         document.getElementById("clientIdField").value = clientId;
+        document.getElementById("postIdField").value = postId; // 追加
         document.getElementById("popupForm").submit();
     }
 
@@ -170,7 +225,8 @@ try {
         link.addEventListener('click', function(event) {
             event.preventDefault();
             var clientId = this.getAttribute('data-client-id');
-            openPopup(clientId, '友達追加しますか？', 'add_friend');
+            var postId = this.getAttribute('data-post-id'); // 追加
+            openPopup(clientId, postId, '友達追加しますか？', 'add_friend');
         });
     });
 
@@ -179,7 +235,8 @@ try {
         link.addEventListener('click', function(event) {
             event.preventDefault();
             var clientId = this.getAttribute('data-client-id');
-            openPopup(clientId, 'この投稿を通報しますか？', 'report');
+            var postId = this.getAttribute('data-post-id'); // 追加
+            openPopup(clientId, postId, 'この投稿を通報しますか？', 'report');
         });
     });
 </script>
