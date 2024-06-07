@@ -2,17 +2,20 @@
 session_start();
 include('db_connect.php');
 
+// ユーザーがログインしているか確認
 if (!isset($_SESSION['customer']['id'])) {
-    header('Location: login_input.php');
+    echo 'Not logged in';
     exit;
 }
 
 $user_id = $_SESSION['customer']['id'];
 
-// ユーザーの友達を取得
-$stmt = $pdo->prepare('SELECT client.* FROM client JOIN friend ON client.client_id = friend.opponent_id WHERE friend.client_id = ?');
+// 友達リストを取得
+$friends = [];
+$stmt = $pdo->prepare('SELECT c.client_id, c.name FROM friend f JOIN client c ON f.opponent_id = c.client_id WHERE f.client_id = ?');
 $stmt->execute([$user_id]);
-$friends = $stmt->fetchAll();
+$friends = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 ?>
 <!DOCTYPE html>
 <html lang="ja">
@@ -55,6 +58,29 @@ $friends = $stmt->fetchAll();
                 logAll(); // 選択された友達のログをロード
                 $("#chatwrap").show(); // チャット枠を表示
                 $("#f3").hide(); // 友達選択枠を非表示
+            });
+
+            $("#button1").click(function(){
+                var message = $("#str").val();
+                if(message.trim() !== ""){
+                    $.ajax({
+                        type: "POST",
+                        url: "log.php",
+                        data: {
+                            type: "message",
+                            friend_id: $.cookie("CHAT_FRIEND"),
+                            message: message
+                        },
+                        success: function(response){
+                            console.log("Message sent:", response);
+                            $("#str").val(""); // テキストボックスをクリア
+                            loadLog(); // ログを再読み込み
+                        },
+                        error: function(xhr, status, error){
+                            console.error("Error occurred while sending message:", status, error);
+                        }
+                    });
+                }
             });
 
             function logAll(){
